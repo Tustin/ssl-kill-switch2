@@ -38,3 +38,4 @@ infer-out/
 *.deb
 .theos
 
+.DS_Store

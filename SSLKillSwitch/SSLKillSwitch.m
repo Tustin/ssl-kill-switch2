@@ -8,19 +8,12 @@
 
 #import <Foundation/Foundation.h>
 #import <Security/SecureTransport.h>
-
-#if SUBSTRATE_BUILD
+#import "fishhook/fishhook.h"
+#import <dlfcn.h>
 #import "substrate.h"
 
 #define PREFERENCE_FILE @"/private/var/mobile/Library/Preferences/com.nablac0d3.SSLKillSwitchSettings.plist"
 #define PREFERENCE_KEY @"shouldDisableCertificateValidation"
-
-#else
-
-#import "fishhook.h"
-#import <dlfcn.h>
-
-#endif
 
 
 #pragma mark Utility Functions
@@ -235,7 +228,13 @@ __attribute__((constructor)) static void init(int argc, const char **argv)
                 if (SSL_set_custom_verify)
                 {
                     SSKLog(@"Hooking SSL_set_custom_verify()...");
-                    MSHookFunction((void *) SSL_set_custom_verify, (void *) replaced_SSL_set_custom_verify,  (void **) &original_SSL_set_custom_verify);
+
+                    if ((rebind_symbols((struct rebinding[1]){{(char *)"SSL_set_custom_verify", (void *)replaced_SSL_set_custom_verify}}, 1) < 0))
+                    {
+                        SSKLog(@"Hooking failed.");
+                    }
+
+                    // MSHookFunction((void *) SSL_set_custom_verify, (void *) replaced_SSL_set_custom_verify,  (void **) &original_SSL_set_custom_verify);
                 }
             }
             else
@@ -246,7 +245,11 @@ __attribute__((constructor)) static void init(int argc, const char **argv)
                 if (SSL_CTX_set_custom_verify)
                 {
                     SSKLog(@"Hooking SSL_CTX_set_custom_verify()...");
-                    MSHookFunction((void *) SSL_CTX_set_custom_verify, (void *) replaced_SSL_CTX_set_custom_verify,  (void **) &original_SSL_CTX_set_custom_verify);
+                    if ((rebind_symbols((struct rebinding[1]){{(char *)"SSL_CTX_set_custom_verify", (void *)replaced_SSL_CTX_set_custom_verify}}, 1) < 0))
+                    {
+                        SSKLog(@"Hooking failed.");
+                    }
+                    // MSHookFunction((void *) SSL_CTX_set_custom_verify, (void *) replaced_SSL_CTX_set_custom_verify,  (void **) &original_SSL_CTX_set_custom_verify);
                 }
             }
             
@@ -255,7 +258,11 @@ __attribute__((constructor)) static void init(int argc, const char **argv)
             if (SSL_get_psk_identity)
             {
                 SSKLog(@"Hooking SSL_get_psk_identity()...");
-                MSHookFunction((void *) SSL_get_psk_identity, (void *) replaced_SSL_get_psk_identity,  (void **) NULL);
+                if ((rebind_symbols((struct rebinding[1]){{(char *)"SSL_get_psk_identity", (void *)replaced_SSL_get_psk_identity}}, 1) < 0))
+                {
+                    SSKLog(@"Hooking failed.");
+                }
+                // MSHookFunction((void *) SSL_get_psk_identity, (void *) replaced_SSL_get_psk_identity,  (void **) NULL);
             }
         }
 		else if ([processInfo isOperatingSystemAtLeastVersion:(NSOperatingSystemVersion){11, 0, 0}])
